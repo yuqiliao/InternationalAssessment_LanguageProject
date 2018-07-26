@@ -151,8 +151,8 @@ T15_G4_ssci_asbg03_shortlist_ScorePlot <- T15_G4_ssci_asbg03_shortlist %>%
   geom_point(stat = "identity", size = 4) +
   coord_flip()
 
-T15_G4_ssci_asbg03_shortlist_plot <- likert(sdf = TIMSS15_G4,
-                                            data = T15_G4_ssci_asbg03_shortlist,
+T15_G4_math_asbg03_shortlist_plot <- likert(sdf = TIMSS15_G4,
+                                            data = T15_G4_math_asbg03_shortlist,
                                             LikertVar = "asbg03",
                                             byVar = "country",
                                             pal = c("#DF4949", "#E27A3F","#45B29D", "#334D5C"),
@@ -349,34 +349,210 @@ T15_G8_math_itlang_bsbg10a_shortlist_ScorePlot <- T15_G8_math_itlang_bsbg10a_sho
   coord_flip()
 
 
+### Check if ITLANG is unique for a given CNT and idschool -----
+T15_G4_lsdf <- getData(data = TIMSS15_G4, varnames = c("itsex", "itlang", "asbg07", "idcntry", "idschool"),
+                 omittedLevels = TRUE, addAttributes = TRUE)
+
+#T15_G4_lsdf is a list by idcntry; now i'm creating a master data frame that has data for all countries.
+T15_G4_lsdf_allcountry <- do.call(rbind.light.edsurvey.data.frame, T15_G4_lsdf)
+
+# check if ITLANG is unique
+T15_G4_countryList %>% distinct(country) %>% level()
+as.numeric(T15_G4_countryList$country)
+
+T15_G4_lsdf_allcountry %>% 
+  group_by(idcntry, idschool) %>% 
+  summarize(n_unique_itlang  = n_distinct(itlang)) %>% 
+  arrange(desc(n_unique_itlang)) %>% 
+  View()
+
+glimpse(T15_G4_lsdf_allcountry)
+T15_G4_lsdf[[1]] %>% 
+  group_by()
+  distinct()
+
+attr(T15_G4_lsdf_allcountry)
+
+
+### Regressions
+lm_math_asbg03 <- lm.sdf(formula = mmat ~ asbg03, data = TIMSS15_G4)
+lm_math_asbg03_2 <- lm.sdf(formula = mmat ~ asbg03, data = TIMSS15_G4, 
+                         recode = list(asbg03 = list(from = c("ALWAYS", "ALMOST ALWAYS"),                                                to = c("ALWAYS/ALMOST ALWAYS")),
+                                       asbg03 = list(from = c("SOMETIMES", "NEVER"),                                                     to = c("SOMETIMES/NEVER"))))
+summary(lm_math_itlang[[3]])
+
+
+### modify Trang's code
+#pisa2012 <- readPISA(filepath = paste0(datapath, 2012), database = "INT", cognitive = "score", countries = "*")
+out <- data.frame("IDCNTRY" = character(0),
+                  #"CNTRY.NAME" = character(0),
+                  "YVar" = character(0),
+                  "EqVar" = character(0),
+                  "coef" = numeric(0),
+                  "se" = numeric(0),
+                  "t" = numeric(0),
+                  "dof" = numeric(0),
+                  "pVal" = numeric(0),
+                  "weight" = character(0),
+                  "n0" = integer(0),
+                  "nUsed" = integer(0)
+)
+# mmat ~ asbg03
+functionsavepath <- '//dc2fs/dc2work/5.2_main/Conferences/CIES 2019/Language/Output/Regression'
+dir.create(paste0(functionsavepath,"/rq1"))
+#file = file(paste0(functionsavepath,"/rq1/regression_error.txt"), open = "wt")
+#sink(file, type = "message", append = T)
+library(plyr)
+for (ci in 1:length(TIMSS15_G4$data)) {
+  cat("\nCountry ")
+  cat(labels(TIMSS15_G4$data)[ci])
+  lm_temp <- tryCatch(lm.sdf(mmat ~ asbg03, data = TIMSS15_G4$datalist[[ci]], weightVar = 'totwgt', jrrIMax = Inf),
+                      error = function(cond) {
+                        message(cond)
+                        return(0)
+                      })
+  if (length(lm_temp) != 1) {
+    out_temp <- data.frame("IDCNTRY" = rep(TIMSS15_G4$datalist[[ci]]$country, nrow(lm_temp$coefmat)))
+    out_temp$YVar <- "mmat"
+    out_temp$EqVar <- row.names(lm_temp$coefmat)
+    out_temp$coef <- lm_temp$coefmat$coef
+    out_temp$se <- lm_temp$coefmat$se
+    out_temp$t <- lm_temp$coefmat$t
+    out_temp$dof <- lm_temp$coefmat$dof
+    out_temp$pVal <- lm_temp$coefmat$`Pr(>|t|)`
+    out_temp$weight <- lm_temp$weight
+    out_temp$n0 <- lm_temp$n0
+    out_temp$nUsed <- lm_temp$nUsed
+  } else {
+    out_temp <- data.frame("IDCNTRY" = pisa2012$datalist[[ci]]$country, "YVar" = "mmat")
+  }
+  out <- rbind.fill(out, out_temp)
+}
+sink(type = "message")
+#dir.create(paste0(functionsavepath,"_rq1"))
+write.csv(out, file.path(functionsavepath,"/rq1/T15_G4_lm_mmat_asbg03.csv"), row.names = FALSE)
+#readr::write_csv(out, paste0(functionsavepath,"/regression/PISA2012_MATH vs st25q01 n sc03q01 n ic02q07 n ec06q01.csv"))
+
+
+sink()
+sink(type="message")
+closeAllConnections()
 
 
 
 
 
-# Export objects as excels
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### Export objects as excels -----
 
 objectList <- list(
   #_itlang
-  
+  T15_G4_ssci_itlang_shortlist, T15_G4_math_itlang_shortlist, T15_G8_ssci_itlang_shortlist, T15_G8_math_itlang_shortlist,
   #_language at home
-  
+  T15_G4_ssci_asbg03_shortlist, T15_G4_math_asbg03_shortlist, T15_G8_ssci_bsbg03_shortlist, T15_G8_math_bsbg03_shortlist,
   #_itlang_lanage at home
-  
+  T15_G4_ssci_itlang_asbg03_shortlist, T15_G4_math_itlang_asbg03_shortlist, T15_G8_ssci_itlang_bsbg03_shortlist, T15_G8_math_itlang_bsbg03_shortlist,
   #_born in the country (student var)
-  
-  #_
-  T15_G4_ssci_itlang, T15_G4_math_itlang, T15_G8_ssci_itlang, T15_G8_math_itlang, T11_G4_ssci_itlang, T11_G4_math_itlang, T11_G8_ssci_itlang, T11_G8_math_itlang, T15_G4_ssci_asbg03, T15_G4_math_asbg03, T15_G8_ssci_bsbg03, T15_G8_math_bsbg03, T11_G4_ssci_asbg03, T11_G4_math_asbg03, T11_G8_ssci_bsbg03, T11_G8_math_bsbg03, T15_G4_ssci_itlang_asbg03, T15_G4_math_itlang_asbg03, T15_G8_ssci_itlang_bsbg03, T15_G8_math_itlang_bsbg03, T11_G4_ssci_itlang_asbg03, T11_G4_math_itlang_asbg03, T11_G8_ssci_itlang_bsbg03, T11_G8_math_itlang_bsbg03)
+  T15_G4_ssci_asbg07_shortlist, T15_G4_math_asbg07_shortlist, T15_G8_ssci_bsbg10a_shortlist, T15_G8_math_bsbg10a_shortlist, 
+  #_itlang_born in the country
+  T15_G4_ssci_itlang_asbg07_shortlist,  T15_G4_math_itlang_asbg07_shortlist, T15_G8_ssci_itlang_bsbg10a_shortlist, T15_G8_math_itlang_bsbg10a_shortlist)
 
 
-names(objectList) <- c("T15_G4_ssci_itlang", "T15_G4_math_itlang", "T15_G8_ssci_itlang", "T15_G8_math_itlang", "T11_G4_ssci_itlang", "T11_G4_math_itlang", "T11_G8_ssci_itlang", "T11_G8_math_itlang", "T15_G4_ssci_asbg03", "T15_G4_math_asbg03", "T15_G8_ssci_bsbg03", "T15_G8_math_bsbg03", "T11_G4_ssci_asbg03", "T11_G4_math_asbg03", "T11_G8_ssci_bsbg03", "T11_G8_math_bsbg03", "T15_G4_ssci_itlang_asbg03", "T15_G4_math_itlang_asbg03", "T15_G8_ssci_itlang_bsbg03", "T15_G8_math_itlang_bsbg03", "T11_G4_ssci_itlang_asbg03", "T11_G4_math_itlang_asbg03", "T11_G8_ssci_itlang_bsbg03", "T11_G8_math_itlang_bsbg03")
+names(objectList) <- c(
+  #_itlang
+  "T15_G4_ssci_itlang_shortlist", "T15_G4_math_itlang_shortlist", "T15_G8_ssci_itlang_shortlist", "T15_G8_math_itlang_shortlist",
+  #_language at home
+  "T15_G4_ssci_asbg03_shortlist", "T15_G4_math_asbg03_shortlist", "T15_G8_ssci_bsbg03_shortlist", "T15_G8_math_bsbg03_shortlist",
+  #_itlang_lanage at home
+  "T15_G4_ssci_itlang_asbg03_shortlist", "T15_G4_math_itlang_asbg03_shortlist", "T15_G8_ssci_itlang_bsbg03_shortlist", "T15_G8_math_itlang_bsbg03_shortlist",
+  #_born in the country (student var)
+  "T15_G4_ssci_asbg07_shortlist", "T15_G4_math_asbg07_shortlist", "T15_G8_ssci_bsbg10a_shortlist", "T15_G8_math_bsbg10a_shortlist", 
+  #_itlang_born in the country
+  "T15_G4_ssci_itlang_asbg07_shortlist",  "T15_G4_math_itlang_asbg07_shortlist", "T15_G8_ssci_itlang_bsbg10a_shortlist", "T15_G8_math_itlang_bsbg10a_shortlist")
 
 i <- 1
 for (object in objectList){
-  write_csv(object$data, path = paste0(names(objectList)[[i]], ".csv"))
+  write_csv(object, path = paste0(names(objectList)[[i]], ".csv"))
   i <- i + 1
 }
 rm(i)
+
+
+
+PlotList <- list(
+  #_itlang
+  T15_G4_ssci_asbg03_shortlist_plot, T15_G4_math_itlang_shortlist_ScorePlot, T15_G8_ssci_itlang_shortlist_ScorePlot, T15_G8_math_itlang_shortlist_ScorePlot,
+  #_language at home
+  T15_G4_ssci_asbg03_shortlist_plot, T15_G4_ssci_asbg03_shortlist_ScorePlot, T15_G4_math_asbg03_shortlist_plot, T15_G4_math_asbg03_shortlist_ScorePlot,T15_G8_ssci_bsbg03_shortlist_plot, T15_G8_ssci_bsbg03_shortlist_ScorePlot, T15_G8_math_bsbg03_shortlist_plot, T15_G8_math_bsbg03_shortlist_ScorePlot,
+  #_itlang_lanage at home
+  T15_G4_ssci_itlang_asbg03_shortlist_ScorePlot, T15_G4_math_itlang_asbg03_shortlist_ScorePlot, T15_G8_ssci_itlang_bsbg03_shortlist_ScorePlot, T15_G8_math_itlang_bsbg03_shortlist_ScorePlot,
+  #_born in the country (student var)
+  
+  #_itlang_born in the country
+  T15_G4_ssci_itlang_asbg07_shortlist_ScorePlot,  T15_G4_math_itlang_asbg07_shortlist_ScorePlot, T15_G8_ssci_itlang_bsbg10a_shortlist_ScorePlot, T15_G8_math_itlang_bsbg10a_shortlist_ScorePlot)
+
+
+names_of_plots <- c(
+  #_itlang
+  "T15_G4_ssci_asbg03_shortlist_plot", "T15_G4_math_itlang_shortlist_ScorePlot", "T15_G8_ssci_itlang_shortlist_ScorePlot", "T15_G8_math_itlang_shortlist_ScorePlot",
+  #_language at home
+  "T15_G4_ssci_asbg03_shortlist_plot", "T15_G4_ssci_asbg03_shortlist_ScorePlot", "T15_G4_math_asbg03_shortlist_plot", "T15_G4_math_asbg03_shortlist_ScorePlot","T15_G8_ssci_bsbg03_shortlist_plot", "T15_G8_ssci_bsbg03_shortlist_ScorePlot", "T15_G8_math_bsbg03_shortlist_plot", "T15_G8_math_bsbg03_shortlist_ScorePlot",
+  #_itlang_lanage at home
+  "T15_G4_ssci_itlang_asbg03_shortlist_ScorePlot", "T15_G4_math_itlang_asbg03_shortlist_ScorePlot", "T15_G8_ssci_itlang_bsbg03_shortlist_ScorePlot", "T15_G8_math_itlang_bsbg03_shortlist_ScorePlot",
+  #_born in the country (student var)
+  
+  #_itlang_born in the country
+  "T15_G4_ssci_itlang_asbg07_shortlist_ScorePlot",  "T15_G4_math_itlang_asbg07_shortlist_ScorePlot", "T15_G8_ssci_itlang_bsbg10a_shortlist_ScorePlot", "T15_G8_math_itlang_bsbg10a_shortlist_ScorePlot")
+
+
+
+#one way to export all graphs (not as ideal)
+pdf("all.pdf")
+invisible(lapply(PlotList, print))
+dev.off()
+
+#another way to export all graphs (works great!)
+invisible(mapply(ggsave, file=paste0(names_of_plots, ".pdf"), plot=PlotList))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
