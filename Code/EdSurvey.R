@@ -276,7 +276,9 @@ lm_temp <- lm.sdf(formula = asmmat01 ~ asbg03_3l + itsex + asdage + asbg04 + asd
 
 summary(lm_temp)
 
-
+rq_temp <- rq.sdf(formula = asmmat01 ~ asbg03_3l + itsex + asdage + asbg04 + asdhedup + asbg07, tau=c(.1), data = temp_lsdf,
+                  weightVar = 'totwgt', jrrIMax = Inf)
+summary(rq_temp)
 ##yl: somehow it
 # [1] "United States"
 # [1] 10029
