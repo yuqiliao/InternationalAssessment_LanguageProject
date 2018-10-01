@@ -709,6 +709,41 @@ P15_read_asbg03_3 <- edsurveyTable(formula = rrea ~ asbg03, data = PIRLS15_2,
                                  jrrIMax = Inf, varMethod = "jackknife",
                                  recode = recode_condition)
 
+# export P15_read_asbg03_3 as untidy data (for excel data viz)
+N <- P15_read_asbg03_3$data %>% 
+  select(country, asbg03, N) %>% 
+  spread(asbg03,  N) %>% 
+  dplyr::rename(N_N = NEVER,
+         N_S = SOMETIMES,
+         N_A = `ALWAYS or ALMOST ALWAYS`)
+PCT <- P15_read_asbg03_3$data %>% 
+  select(country, asbg03, PCT) %>% 
+  spread(asbg03,  PCT) %>% 
+  dplyr::rename(PCT_N = NEVER,
+                PCT_S = SOMETIMES,
+                PCT_A = `ALWAYS or ALMOST ALWAYS`)
+PCT_SE <- P15_read_asbg03_3$data %>% 
+  select(country, asbg03, `SE(PCT)`) %>% 
+  spread(asbg03,  `SE(PCT)`) %>% 
+  dplyr::rename(PCT_SE_N = NEVER,
+                PCT_SE_S = SOMETIMES,
+                PCT_SE_A = `ALWAYS or ALMOST ALWAYS`)
+MEAN <- P15_read_asbg03_3$data %>% 
+  select(country, asbg03, MEAN) %>% 
+  spread(asbg03,  MEAN) %>% 
+  dplyr::rename(MEAN_N = NEVER,
+                MEAN_S = SOMETIMES,
+                MEAN_A = `ALWAYS or ALMOST ALWAYS`)
+MEAN_SE <- P15_read_asbg03_3$data %>% 
+  select(country, asbg03, `SE(MEAN)`) %>% 
+  spread(asbg03,  `SE(MEAN)`) %>% 
+  dplyr::rename(MEAN_SE_N = NEVER,
+                MEAN_SE_S = SOMETIMES,
+                MEAN_SE_A = `ALWAYS or ALMOST ALWAYS`)
+
+P15_read_asbg03_3_wide <- bind_cols(N, PCT, PCT_SE, MEAN, MEAN_SE)
+
+
 
 P15_read_asbg03_plot <- likert(sdf = PIRLS15,
                                             data = P15_read_asbg03$data,
@@ -717,7 +752,7 @@ P15_read_asbg03_plot <- likert(sdf = PIRLS15,
                                             pal = c("#DF4949", "#E27A3F","#45B29D", "#334D5C"),
                                             ascending = FALSE)
 
-P15_read_asbg03_3_plot <- likert(sdf = PIRLS15,
+P15_read_asbg03_3_plot <- likert(sdf = PIRLS15_2,
                                data = P15_read_asbg03_3$data,
                                LikertVar = "asbg03",
                                byVar = "country",
